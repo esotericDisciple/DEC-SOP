@@ -1,6 +1,13 @@
-﻿#include <SOP\SOP_Node.h>
-#include <GEO\GEO_Hedge.h>
-#include <GEO\GEO_PolyInterface.h>
+﻿#include <SOP/SOP_Node.h>
+#include <GEO/GEO_Hedge.h>
+#include <GEO/GEO_HedgeInterface.h>
+#include <GEO/GEO_PolyInterface.h>
+#include <OP/OP_AutoLockInputs.h>
+#include <GA/GA_Handle.h>
+#include <GA/GA_Types.h>
+#include <OP/OP_OperatorTable.h>
+#include <OP/OP_SaveFlags.h>
+#include <PRM/PRM_Include.h>
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
 
@@ -20,6 +27,7 @@ public:
 
 	UT_Array<UT_Vector2> edgeList;
 	GEO_PolyInterface *polinterface;
+	GEO_HedgeInterface *hedgeinterface;
 
 private:
 
@@ -29,9 +37,9 @@ private:
 	void Laplacian(GA_ROHandleV3 vectorfield, OP_Context &context);
 	void divergence(GA_ROHandleV3 vectorfield, GA_Offset primOffset);
 	GA_ROHandleV3  vectorfield;
-
+    void Vectordecomposition(GA_ROHandleV3 vectorfield, OP_Context &context);
 	UT_Vector3 oneformtofield(UT_Array<fpreal> &oneformlist, GA_Offset primoffset);
-	void DIFF_SOP::covector(UT_Array<fpreal> &oneformlist, GA_ROHandleV3 &vectorfield);
+	void covector(UT_Array<fpreal> &oneformlist, GA_ROHandleV3 &vectorfield);
 
 	SparseMat deriative0(SparseMat d0);
 	SparseMat deriative1(SparseMat d1);
@@ -45,7 +53,7 @@ private:
 	UT_Array<int>  primhedgelist;
 	UT_Array<int>  primhedgelistbnd;
 
-	int    fielchoice();
+	int    fieldchoice();
 	void SCALAR(UT_String &str, fpreal t)
 	{
 		evalString(str, "Field", 0, t);

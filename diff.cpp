@@ -1,24 +1,8 @@
 #include "diff.h"
-#include HDK STUFF
+//#include HDK STUFF
 
 static PRM_Name scalarfield("Field", "Field");
 
-//________________________________________________________________________________________________________________________ boringHdkstuff
-void
-newSopOperator(OP_OperatorTable *table)
-{
-	OP_Operator *op;
-	op = new OP_Operator("ddg_TrigClosed", //internal name
-		"ddg_TrigClosed.v1", 				 //UI Name
-		DIFF_SOP::myConstructor,		 //How to build the SOP	
-		DIFF_SOP::MyTemplateList,		 //list of parameters		
-		1,								 //min number of sources
-		1,								 //max number of inputs
-		0,								 //local variables
-		OP_FLAG_GENERATOR);				 //flag as a generator type		
-
-	table->addOperator(op);
-}
 
 
 OP_Node * DIFF_SOP::myConstructor(OP_Network *net, const char *name, OP_Operator *op) {
@@ -29,7 +13,7 @@ OP_Node * DIFF_SOP::myConstructor(OP_Network *net, const char *name, OP_Operator
 
 
 static PRM_Name field("fieldop", "FieldOperation");
-static PRM_Name fielparam[] =
+static PRM_Name fieldparam[] =
 {
 	PRM_Name("grad",    "Gradient"),
 	PRM_Name("div",     "Divergence"),
@@ -43,7 +27,7 @@ enum
 	DIFF_SOP_grad, DIFF_SOP_div, DIFF_SOP_lap, DIFF_SOP_hod, DIFF_SOP_vecsource
 };
 
-static PRM_ChoiceList fieldmenu(PRM_CHOICELIST_SINGLE, fielparam);
+static PRM_ChoiceList fieldmenu(PRM_CHOICELIST_SINGLE, fieldparam);
 
 PRM_Template DIFF_SOP::MyTemplateList[] = {
 	PRM_Template(PRM_STRING ,1, &scalarfield),
@@ -58,7 +42,7 @@ DIFF_SOP::~DIFF_SOP() {}
 
 
 int
-DIFF_SOP::fielchoice()
+DIFF_SOP::fieldchoice()
 {
 	return evalInt(field.getToken(), 0, 0.0f);
 }
@@ -553,9 +537,11 @@ fpreal DIFF_SOP::cotangent(GEO_Hedge halfedge) {
 
 	GEO_Hedge hnext = polinterface->nextPrimitiveHedge(halfedge);
 	GEO_Hedge hprev = polinterface->prevPrimitiveHedge(halfedge);
-	UT_Vector3F nexta = polinterface->hedgeVector(hnext);
+// 	UT_Vector3F nexta = polinterface->hedgeVector(hnext);
+	UT_Vector3F nexta = hedgeinterface->hedgeVector(hnext);
 	nexta.negate();
-	UT_Vector3F prev = polinterface->hedgeVector(hprev);
+// 	UT_Vector3F prev = polinterface->hedgeVector(hprev);
+	UT_Vector3F prev = hedgeinterface->hedgeVector(hprev);
 	return dot(prev, nexta) / cross(nexta, prev).length();
 
 
@@ -573,9 +559,12 @@ void DIFF_SOP::gradient(GA_ROHandleF scalarfield, GA_Offset primOffset) {
 	GA_Offset vtx1 = polinterface->srcPoint(hnext);
 	GEO_Hedge  hprev = polinterface->prevPrimitiveHedge(Hedge1);
 	GA_Offset vtx2 = polinterface->srcPoint(hprev);
-	UT_Vector3F prev = polinterface->hedgeVector(hprev);
-	UT_Vector3F next = polinterface->hedgeVector(hnext);
-	UT_Vector3F curr = polinterface->hedgeVector(Hedge1);
+// 	UT_Vector3F prev = polinterface->hedgeVector(hprev);
+// 	UT_Vector3F next = polinterface->hedgeVector(hnext);
+// 	UT_Vector3F curr = polinterface->hedgeVector(Hedge1);
+	UT_Vector3F prev = hedgeinterface->hedgeVector(hprev);
+	UT_Vector3F next = hedgeinterface->hedgeVector(hnext);
+	UT_Vector3F curr = hedgeinterface->hedgeVector(Hedge1);
 
 	UT_Vector3F	   n = cross(next, prev); n.normalize();
 	fpreal area = gdp->getGEOPrimitive(primOffset)->calcArea();
@@ -624,7 +613,7 @@ void DIFF_SOP::divergence(GA_ROHandleV3 vectorfield, GA_Offset primOffset) {
 OP_ERROR
 DIFF_SOP::cookMySop(OP_Context &context) {
 	OP_Node::flags().timeDep = 1;
-	int fields = fielchoice();
+	int fields = fieldchoice();
 	OP_Node::flags().timeDep = 1;
 
 	fpreal now = context.getTime();
@@ -672,7 +661,7 @@ DIFF_SOP::cookMySop(OP_Context &context) {
 		else { gdp->destroyAttribute(GA_ATTRIB_POINT, "Divergece", 0); }
 
 		if (fields == DIFF_SOP_hod) {
-			Vectordecomposition(vectorfield, context);
+			DIFF_SOP::Vectordecomposition(vectorfield, context);
 		}
 		else { gdp->destroyAttribute(GA_ATTRIB_POINT, "HodgeDecomp", 0); }
 	}
@@ -681,7 +670,22 @@ DIFF_SOP::cookMySop(OP_Context &context) {
 }
 
 
+//________________________________________________________________________________________________________________________ boringHdkstuff
+void
+newSopOperator(OP_OperatorTable *table)
+{
+	OP_Operator *op;
+	op = new OP_Operator("ddg_TrigClosed", //internal name
+		"ddg_TrigClosed.v1", 				 //UI Name
+		DIFF_SOP::myConstructor,		 //How to build the SOP	
+		DIFF_SOP::MyTemplateList,		 //list of parameters		
+		1,								 //min number of sources
+		1,								 //max number of inputs
+		0,								 //local variables
+		OP_FLAG_GENERATOR);				 //flag as a generator type		
 
+	table->addOperator(op);
+}
 
 
 
